@@ -3,11 +3,25 @@ import { streamText, tool } from 'ai';
 import { readFile } from 'fs/promises';
 import { z } from 'zod';
 import pkg from './package.json';
-import * as readline from 'readline';
+import inquirer from 'inquirer';
 
-const summaries = ['infraestrutura-para-gestao-de-dados', 'algoritimos-e-estruturas-de-dados-II', 'probabilidade-e-estatistica', 'todas']
+const fs = require('fs');
+const path = require('path');
 
-console.log(`PUCRS IA version: ${pkg.version}`);
+function getSummaryFiles(): string[] {
+    const summariesDir: string = path.join(__dirname, 'summaries');
+    const files: string[] = fs.readdirSync(summariesDir);
+
+    const summaryFiles = files
+        .filter((file) => file.endsWith('.md'))
+        .map((file) => file.replace('.md', ''));
+
+    return summaryFiles;
+}
+
+const summaries = getSummaryFiles();
+
+console.log(`Pablito IA version: ${pkg.version}`);
 
 // Create a list to store conversation history
 type Message = {
@@ -18,22 +32,20 @@ type Message = {
 // Initialize conversation history
 const conversationHistory: Message[] = [];
 
-// Create readline interface for user input
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
 // Function to handle the query process
 async function handleQuery() {
     let continueQuerying = true;
 
     while (continueQuerying) {
         try {
-            // Prompt user for query
-            const query = await new Promise<string>((resolve) => {
-                rl.question('Enter your query (or type "exit" to quit): ', resolve);
-            });
+            // Prompt user for query using inquirer
+            const { query } = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'query',
+                    message: 'Enter your query (or type "exit" to quit):',
+                }
+            ]);
 
             // Check if user wants to exit
             if (query.toLowerCase() === 'exit') {
@@ -64,8 +76,7 @@ async function handleQuery() {
         }
     }
 
-    // Close the readline interface when done
-    rl.close();
+    console.log('Goodbye!');
 }
 
 // Function to process a query and return the response
@@ -76,7 +87,7 @@ async function processQuery(userQuestion: string): Promise<string> {
         model: anthropic('claude-3-7-sonnet-20250219'),
         prompt: userQuestion,
         system:
-            `You are an agent that has access a list of dicipline summaries. 
+            `You are Pablito, an agent that has access to a list of dicipline summaries. 
       Please provide the user with the information they are looking for by using readFile tool
       the file names are:
       ${summaries.join(', ')}`,
@@ -96,11 +107,13 @@ async function processQuery(userQuestion: string): Promise<string> {
         },
         maxSteps: 10,
         onStepFinish: ({ toolCalls }) => {
+            console.log('\n');
+            console.log('========================================');
             console.log('Tool calls:', toolCalls);
+            console.log('========================================');
+            console.log('\n');
         },
     });
-
-    console.log('\n\nPUCRS IA: ');
 
     for await (const textPart of textStream) {
         process.stdout.write(textPart);
@@ -108,6 +121,7 @@ async function processQuery(userQuestion: string): Promise<string> {
     }
 
     console.log('\n');
+
     return responseText;
 }
 

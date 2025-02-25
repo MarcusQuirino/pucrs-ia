@@ -2,7 +2,7 @@
   "name": "database",
   "module": "index.ts",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "start": "bun run index.ts"
   },
