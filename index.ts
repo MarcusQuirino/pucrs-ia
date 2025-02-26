@@ -2,13 +2,9 @@
 import pkg from './package.json';
 import { sendQuestion } from './src/ia/ia';
 import { getUserPrompt } from './src/utils/inquirer';
+import type { Message } from './src/types';
 
 console.log(`Pablito IA version: ${pkg.version}`);
-
-type Message = {
-    role: 'user' | 'assistant';
-    content: string;
-};
 
 let conversationHistory: Message[] = [];
 
@@ -19,19 +15,17 @@ async function handleQuery() {
         try {
             const { query } = await getUserPrompt()
 
+            conversationHistory.push({ role: 'user', content: query });
+
             if (query.toLowerCase() === 'exit') {
                 continueQuerying = false;
                 continue;
             }
 
-            conversationHistory.push({ role: 'user', content: query });
-
-            const response = await processQuery(query);
-
-            conversationHistory.push({ role: 'assistant', content: response });
-
             if (query.toLowerCase() === 'new') {
                 conversationHistory = []
+                console.log('\n--- New conversation started ---\n');
+                continue;
             }
 
             if (query.toLowerCase() === 'history') {
@@ -40,8 +34,12 @@ async function handleQuery() {
                     console.log(`[${msg.role}]: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`);
                 });
                 console.log('---------------------------\n');
+                continue;
             }
 
+            const response = await processQuery(conversationHistory);
+
+            conversationHistory.push({ role: 'assistant', content: response });
         } catch (error) {
             console.error('Error processing query:', error);
         }
@@ -50,10 +48,10 @@ async function handleQuery() {
     console.log('Goodbye!');
 }
 
-async function processQuery(userQuestion: string) {
+async function processQuery(conversationHistory: Message[]) {
     let responseText = '';
 
-    const textStream = sendQuestion(userQuestion)
+    const textStream = sendQuestion(conversationHistory)
 
     for await (const textPart of textStream) {
         process.stdout.write(textPart);

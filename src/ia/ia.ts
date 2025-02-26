@@ -3,11 +3,11 @@ import { streamText } from 'ai';
 
 import { system } from '../utils/consts';
 import { getTools } from './tools';
-
-export function sendQuestion(userQuestion: string) {
+import type { Message } from '../types';
+export function sendQuestion(messages: Message[]) {
     const { textStream } = streamText({
         model: anthropic('claude-3-7-sonnet-20250219'),
-        prompt: userQuestion,
+        messages,
         system,
         tools: getTools(),
         maxSteps: 10,
