@@ -9,6 +9,7 @@ export function sendQuestion(messages: Message[]) {
         model: anthropic('claude-3-7-sonnet-20250219'),
         messages,
         system,
+        temperature: 0,
         tools: getTools(),
         maxSteps: 10,
         onStepFinish: ({ toolCalls }) => logToolCalls(toolCalls),
